@@ -149,6 +149,8 @@ def start_consume_three():
     start_consume('queue_three', callback_three)
 
 
+
+
 # def start_consume(queue_params, consume_params):
 def start_consume(queue_name, calllback, arguments=None):
     try:
@@ -172,59 +174,23 @@ def start_consume(queue_name, calllback, arguments=None):
 
 
 def start_consume_mail():
-    try:
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='localhost')
-        )
-
-        channel = connection.channel()
-        channel.queue_declare(queue='queue_mail', durable=True)
-        channel.basic_consume(callback_mail,
-                              queue='queue_mail',
-                              no_ack=True)
-
-        channel.basic_qos(prefetch_count=1)
-        channel.start_consuming()
-    except Exception as exc:
-        channel.stop_consuming()
-        syslog.syslog("Error while consuming queue mail: %s" % str(exc))
-
-    connection.close()
-    sys.exit(1)
-
-
-def start_consume_sms():
-    try:
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='localhost')
-        )
-
-        channel = connection.channel()
-        channel.queue_declare(queue='queue_sms', durable=True)
-        channel.basic_consume(callback_sms,
-                              queue='queue_sms',
-                              no_ack=True
-                              )
-
-        channel.basic_qos(prefetch_count=1)
-        channel.start_consuming()
-    except Exception as exc:
-        channel.stop_consuming()
-        syslog.syslog("Error while consuming queue sms: %s" % str(exc))
-    connection.close()
-    sys.exit(1)
+    start_consume_by_type('queue_mail', callback_mail)
 
 
 def start_consume_telegram():
+    start_consume_by_type('queue_tlgrm', callback_telegram)
+
+
+def start_consume_by_type(queue_name, callback):
     try:
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(host='localhost')
         )
 
         channel = connection.channel()
-        channel.queue_declare(queue='queue_tlgrm', durable=True)
-        channel.basic_consume(callback_telegram,
-                              queue='queue_tlgrm',
+        channel.queue_declare(queue=queue_name, durable=True)
+        channel.basic_consume(callback,
+                              queue=queue_name,
                               no_ack=True
                               )
 
@@ -232,15 +198,10 @@ def start_consume_telegram():
         channel.start_consuming()
     except Exception as exc:
         channel.stop_consuming()
-        syslog.syslog("Error while consuming queue tlgrm: %s" % str(exc))
+        syslog.syslog("Error while consuming queue " + queue_name + ": %s" % str(exc))
 
     connection.close()
     sys.exit(1)
-
-
-
-
-
 
 
 def create_one(body_msg):
@@ -323,8 +284,6 @@ def event_update(data):
     return True
 
 
-
-
 def callback_one(ch, method, properties, body):
     row = create_one(body)
     db_result = db_process_one(row)
@@ -354,16 +313,28 @@ def callback_three(ch, method, properties, body):
         ch.basic_nack(delivery_tag=method.delivery_tag)
 
 
-def callback_sms(ch, method, properties, body):
-    Sms.send(body)
-
-
 def callback_telegram(ch, method, properties, body):
     Telegram.send(body)
 
 
 def callback_mail(ch, method, properties, body):
     Mail.send(body)
+
+
+## смс
+
+def start_consume_sms():
+     start_consume_by_type('queue_sms', callback_sms)
+
+
+def callback_sms(ch, method, properties, body):
+    Sms.send(body)
+
+## конец смс
+
+
+
+
 
 
 
