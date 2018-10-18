@@ -1,14 +1,17 @@
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.header import Header
+from validate_email import validate_email
+
+
 class Mail:
-    def send(body_msg):
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
-        from email.header import Header
-        from validate_email import validate_email
+    def execute(self, ch, method, properties, body):
+
 
         try:
             my_mail = 'mail@mail.server'
-            mailDict = json.loads(body_msg)
+            mailDict = json.loads(body)
             mail_is_valid = validate_email(mailDict['mail'])
 
             if mail_is_valid is not True:

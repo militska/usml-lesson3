@@ -4,7 +4,7 @@ import json
 
 class Telegram:
 
-    def send(body):
+    def execute(body):
         try:
             # Telegram Bot
             pp = telegram.utils.request.Request(proxy_url='socks5://0.0.0.0:9999', urllib3_proxy_kwargs={

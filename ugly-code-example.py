@@ -11,9 +11,13 @@ import requests
 from threading import Thread
 from jobs.Mail import Mail
 from jobs.Telegram import Telegram
+from jobs.One import One
+from jobs.Two import Two
+from jobs.Three import Three
 from handler import handler
 from jobs.Sms import Sms
 from components.DB import DB
+
 
 
 def Supervisor(thr_list):
@@ -52,6 +56,9 @@ def start_consume_mail():
 def start_consume_telegram():
     start_consume_by_type('queue_tlgrm', callback_telegram)
 
+
+def start_consume_sms():
+    start_consume_by_type('start_consume_sms', callback_sms)
 
 
 
@@ -101,68 +108,6 @@ def start_consume_by_type(queue_name, callback):
     sys.exit(1)
 
 
-def create_one(body_msg):
-    tt = json.loads(body_msg)
-
-    try:
-        row = [
-            tt['hostname'].encode('utf-8'),
-            tt['hostname'].encode('utf-8'),
-            tt['state-trigger'].encode('utf-8'),
-            "Автоматически создано \nevent: " +
-            str(tt['event'].encode('utf-8')),
-            tt['check-type'].encode('utf-8'),
-            int(tt['trigger']),
-            tt['message'].encode('utf-8'),
-            tt.get('zhost', 'some.host').encode('utf-8')
-        ]
-
-        syslog.syslog('Message: {} {} {}'.format(tt['hostname'].encode(
-            'utf-8'), tt['message'].encode('utf-8'), tt['state-trigger'].encode('utf-8')))
-        return row
-    except Exception as exc:
-        syslog.syslog("Error while creating: %s" % exc)
-        return False
-
-
-def create_two(body_msg):
-    tt = json.loads(body_msg)
-    try:
-        row = [
-            tt['hostname'].encode('utf-8'),
-            tt['ip-address'].encode('utf-8'),
-            tt['state-trigger'].encode('utf-8'),
-            tt['message'].encode('utf-8'),
-            tt['comment'].encode('utf-8'),
-            tt['trigger'].encode('utf-8'),
-            "Автоматически создано " +
-            tt['prefix'].encode('utf-8') + "\nevent: " +
-            tt['event'].encode('utf-8'),
-            tt.get('zhost', 'some.host').encode('utf-8')
-        ]
-
-        syslog.syslog('Message: {} {} {}'.format(tt['hostname'].encode(
-            'utf-8'), tt['message'].encode('utf-8'), tt['state-trigger'].encode('utf-8')))
-        return row
-    except Exception as exc:
-        syslog.syslog("Error while creating: %s" % exc)
-        return False
-
-
-def create_three(body_msg):
-    tt = json.loads(body_msg)
-    try:
-        row = [tt['hostname'].encode(
-            'utf-8'), tt['state-trigger'].encode('utf-8'), tt['trigger'].encode('utf-8')]
-
-        syslog.syslog('Three message: {} {} {}'.format(tt['hostname'].encode(
-            'utf-8'), tt['message'].encode('utf-8'), tt['state-trigger'].encode('utf-8')))
-        return row
-    except Exception as exc:
-        syslog.syslog("Error while creating: %s" % (exc))
-        return False
-
-
 def event_update(data):
     if not data:
         return False
@@ -181,56 +126,29 @@ def event_update(data):
     return True
 
 
+
 def callback_one(ch, method, properties, body):
-    row = create_one(body)
-    db_result = DB.db_process_one(row)
-    result = event_update(db_result)
-    if result:
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-    else:
-        ch.basic_nack(delivery_tag=method.delivery_tag)
+    One.execute(ch, method, properties, body)
 
 
 def callback_two(ch, method, properties, body):
-    row = create_two(body)
-    db_result = DB.db_process_two(row)
-    result = event_update(db_result)
-    if result:
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-    else:
-        ch.basic_nack(delivery_tag=method.delivery_tag)
+    Two.execute(ch, method, properties, body)
 
 
 def callback_three(ch, method, properties, body):
-    row = create_three(body)
-    db_result = DB.db_process_three(row)
-    if db_result:
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-    else:
-        ch.basic_nack(delivery_tag=method.delivery_tag)
+    Three.execute(ch, method, properties, body)
 
 
 def callback_telegram(ch, method, properties, body):
-    Telegram.send(body)
+    Telegram.execute(body)
 
 
 def callback_mail(ch, method, properties, body):
-    Mail.send(body)
-
-
-## смс
-
-
+    Mail.execute(ch, method, properties, body)
 
 
 def callback_sms(ch, method, properties, body):
-    Sms.send(body)
-
-## конец смс
-
-
-
-
+    Sms.execute(body)
 
 
 

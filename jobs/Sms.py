@@ -1,7 +1,7 @@
 import json
 
 class Sms:
-    def send(body):
+    def execute(body):
         smsDict = json.loads(body)
 
         number = smsDict['number']
