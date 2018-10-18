@@ -9,10 +9,10 @@ import time
 import re
 import requests
 from threading import Thread
-from messages.Mail import Mail
-from messages.Telegram import Telegram
+from jobs.Mail import Mail
+from jobs.Telegram import Telegram
 from handler import handler
-from messages.Sms import Sms
+from jobs.Sms import Sms
 from components.DB import DB
 
 
