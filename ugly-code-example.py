@@ -13,6 +13,7 @@ from messages.Mail import Mail
 from messages.Telegram import Telegram
 from handler import handler
 from messages.Sms import Sms
+from components.DB import DB
 
 
 def Supervisor(thr_list):
@@ -32,108 +33,6 @@ def Supervisor(thr_list):
         time.sleep(10)
 
 
-def db_process_one(row):
-    if not row:
-        return False
-    zhost = row[7]
-
-    try:
-        connection = dbModule.Connection("db_login/db_pass")
-    except dbModule.DatabaseError as exc:
-        syslog.syslog("DB connection error: %s" % exc)
-        return False
-
-    try:
-        cursor = connection.cursor()
-        statTT = cursor.var(dbModule.STRING, 255)
-        result = cursor.var(dbModule.NUMBER, 255)
-        numTT = cursor.var(dbModule.NUMBER, 255)
-        cursor.prepare("""BEGIN;
-            procedure_one(:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, :11);
-        ); END;""")
-        row.append(result)
-        row.append(numTT)
-        row.append(statTT)
-        cursor.execute(None, row)
-        connection.commit()
-        cursor.close()
-        syslog.syslog("Insert data to db: %s" % row[0])
-    except Exception as exc:
-        syslog.syslog("Error while inserting to db: %s" % exc)
-        return False
-
-    event_num = re.search("\s*([0-9]+)", row[6]).group(1)
-    resultTT = (int(row[-3].getvalue()),
-                int(row[-2].getvalue()), str(row[-1].getvalue()))
-
-    syslog.syslog("Prepare ack one: %s" % row)
-    return (zhost, event_num, resultTT)
-
-
-def db_process_two(row):
-    if not row:
-        return False
-    zhost = row[7]
-    try:
-        connection = dbModule.Connection("db_login/db_pass")
-    except dbModule.DatabaseError as exc:
-        syslog.syslog("DB connection error: %s" % exc)
-        return False
-
-    try:
-        cursor = connection.cursor()
-        statTT = cursor.var(dbModule.STRING, 255)
-        result = cursor.var(dbModule.NUMBER, 255)
-        numTT = cursor.var(dbModule.NUMBER, 255)
-        cursor.prepare("""BEGIN
-        procedure_two(:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, :11);
-        END;""")
-        row.append(result)
-        row.append(numTT)
-        row.append(statTT)
-        cursor.execute(None, row)
-        connection.commit()
-        cursor.close()
-        syslog.syslog("Insert data to db: %s" % row[0])
-    except Exception as exc:
-        syslog.syslog("Error while inserting to db: %s" % exc)
-        return False
-
-    syslog.syslog(str(row))
-    event_num = re.search("\s*([0-9]+)", row[3]).group(1)
-    event_reg_num = row[-2].getvalue()
-    if event_reg_num == None:
-        event_reg_num = 0
-    event_reg_status = str(row[-1].getvalue())
-    resultTT = (int(event_reg_num), event_reg_status)
-    syslog.syslog("Prepare ack two: %s" % row)
-    return (zhost, event_num, resultTT)
-
-
-def db_process_three(row):
-    if not row:
-        return False
-    try:
-        connection = dbModule.Connection("db_login/db_pass")
-    except dbModule.DatabaseError as exc:
-        syslog.syslog("DB connection error: %s" % exc)
-        return False
-
-    try:
-        cursor = connection.cursor()
-        cursor.prepare("""BEGIN;
-            procedure_three(:1, :2, :3);
-            END;""")
-        cursor.execute(None, row)
-        connection.commit()
-        syslog.syslog("Insert data to db: %s" % row[0])
-    except Exception as exc:
-        syslog.syslog("Error while inserting to db: %s" % exc)
-        return False
-
-    return True
-
-
 def start_consume_one():
     start_consume('queue_one', callback_one, {"x-priority": 5})
 
@@ -146,6 +45,16 @@ def start_consume_three():
     start_consume('queue_three', callback_three)
 
 
+def start_consume_mail():
+    start_consume_by_type('queue_mail', callback_mail)
+
+
+def start_consume_telegram():
+    start_consume_by_type('queue_tlgrm', callback_telegram)
+
+
+def start_consume_sms():
+    start_consume_by_type('queue_sms', callback_sms)
 
 
 # def start_consume(queue_params, consume_params):
@@ -170,12 +79,6 @@ def start_consume(queue_name, calllback, arguments=None):
     sys.exit(1)
 
 
-def start_consume_mail():
-    start_consume_by_type('queue_mail', callback_mail)
-
-
-def start_consume_telegram():
-    start_consume_by_type('queue_tlgrm', callback_telegram)
 
 
 def start_consume_by_type(queue_name, callback):
@@ -285,7 +188,7 @@ def event_update(data):
 
 def callback_one(ch, method, properties, body):
     row = create_one(body)
-    db_result = db_process_one(row)
+    db_result = DB.db_process_one(row)
     result = event_update(db_result)
     if result:
         ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -295,7 +198,7 @@ def callback_one(ch, method, properties, body):
 
 def callback_two(ch, method, properties, body):
     row = create_two(body)
-    db_result = db_process_two(row)
+    db_result = DB.db_process_two(row)
     result = event_update(db_result)
     if result:
         ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -305,7 +208,7 @@ def callback_two(ch, method, properties, body):
 
 def callback_three(ch, method, properties, body):
     row = create_three(body)
-    db_result = db_process_three(row)
+    db_result = DB.db_process_three(row)
     if db_result:
         ch.basic_ack(delivery_tag=method.delivery_tag)
     else:
@@ -322,8 +225,7 @@ def callback_mail(ch, method, properties, body):
 
 ## смс
 
-def start_consume_sms():
-     start_consume_by_type('queue_sms', callback_sms)
+
 
 
 def callback_sms(ch, method, properties, body):
