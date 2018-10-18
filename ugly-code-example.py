@@ -144,7 +144,7 @@ def callback_telegram(ch, method, properties, body):
 
 
 def callback_mail(ch, method, properties, body):
-    Mail.execute(ch, method, properties, body)
+    Mail.execute(body)
 
 
 def callback_sms(ch, method, properties, body):

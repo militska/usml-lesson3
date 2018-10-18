@@ -6,7 +6,7 @@ from validate_email import validate_email
 
 
 class Mail:
-    def execute(self, ch, method, properties, body):
+    def execute(self, body):
 
 
         try:
