@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import pika
-import os
 import sys
 import json
 import syslog
@@ -10,12 +9,10 @@ import time
 import re
 import requests
 from threading import Thread
-from Mail import Mail
-from Telegram import Telegram
-from TelegramApi import telegram_api
-from corporateDB import corporateDB
+from messages.Mail import Mail
+from messages.Telegram import Telegram
 from handler import handler
-from Sms import Sms
+from messages.Sms import Sms
 
 
 def Supervisor(thr_list):
@@ -186,7 +183,9 @@ def start_consume_by_type(queue_name, callback):
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(host='localhost')
         )
-
+        {"IsDistinguishedFolder": false, "FolderId": {
+            "Id": "AAMkADdmMjkxMWFjLTFmM2ItNGY4Mi05ZWM1LWI5NmY4OTA2NGE1MQAuAAAAAABlWY2YLesfT5Arz/ONosk1AQDQg9anWddjRJtNaftzaYOeAAHUWnBcAAA=",
+            "ChangeKey": "AQAAABYAAADQg9anWddjRJtNaftzaYOeAAIGfEJR"}}
         channel = connection.channel()
         channel.queue_declare(queue=queue_name, durable=True)
         channel.basic_consume(callback,
