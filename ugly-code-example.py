@@ -53,8 +53,6 @@ def start_consume_telegram():
     start_consume_by_type('queue_tlgrm', callback_telegram)
 
 
-def start_consume_sms():
-    start_consume_by_type('queue_sms', callback_sms)
 
 
 # def start_consume(queue_params, consume_params):
@@ -86,9 +84,6 @@ def start_consume_by_type(queue_name, callback):
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(host='localhost')
         )
-        {"IsDistinguishedFolder": false, "FolderId": {
-            "Id": "AAMkADdmMjkxMWFjLTFmM2ItNGY4Mi05ZWM1LWI5NmY4OTA2NGE1MQAuAAAAAABlWY2YLesfT5Arz/ONosk1AQDQg9anWddjRJtNaftzaYOeAAHUWnBcAAA=",
-            "ChangeKey": "AQAAABYAAADQg9anWddjRJtNaftzaYOeAAIGfEJR"}}
         channel = connection.channel()
         channel.queue_declare(queue=queue_name, durable=True)
         channel.basic_consume(callback,
