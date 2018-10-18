@@ -1,14 +1,15 @@
 import json
 from components.DB import DB
 import syslog
+from components.Helper import Helper
 
 
 class Two:
 
     def execute(self, ch, method, properties, body):
-        row = create_two(body)
+        row = self.create_two(body)
         db_result = DB.db_process_two(row)
-        result = event_update(db_result)
+        result = Helper.event_update(db_result)
         if result:
             ch.basic_ack(delivery_tag=method.delivery_tag)
         else:

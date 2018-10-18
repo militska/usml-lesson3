@@ -1,12 +1,13 @@
 import json
 from components.DB import DB
 import syslog
+from components.Helper import Helper
 
 
 class Three:
 
     def execute(self, ch, method, properties, body):
-        row = create_three(body)
+        row = self.create_three(body)
         db_result = DB.db_process_three(row)
         if db_result:
             ch.basic_ack(delivery_tag=method.delivery_tag)
